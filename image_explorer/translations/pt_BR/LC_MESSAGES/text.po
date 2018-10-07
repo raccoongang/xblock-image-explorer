@@ -16,4 +16,4 @@ msgstr ""
 
 #: image_explorer.py:128
 msgid "Missing event_type in JSON data"
-msgstr ""
+msgstr "Event_type não encontrado nos dados JSON"
