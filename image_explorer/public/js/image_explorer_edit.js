@@ -1,12 +1,11 @@
 function ImageExplorerEditBlock(runtime, element) {
-    var xmlEditorTextarea = $('.block-xml-editor', element),
-        xmlEditor = CodeMirror.fromTextArea(xmlEditorTextarea[0], { mode: 'xml', lineWrapping: true });
+    var xmlEditor = $('.block-xml-editor', element);
 
     $(element).find('.save-button').bind('click', function() {
         var data = {
             'display_name': $(element).find('.edit-display-name').val(),
             'hotspot_coordinates_centered': $('.edit-hotspot-coordinates-centered', element).is(':checked'),
-            'data': xmlEditor.getValue(),
+            'data': xmlEditor.val(),
         };
         var handlerUrl = runtime.handlerUrl(element, 'studio_submit');
         $('.xblock-editor-error-message', element).html();

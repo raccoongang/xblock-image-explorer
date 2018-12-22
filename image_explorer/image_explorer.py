@@ -96,19 +96,10 @@ class ImageExplorerBlock(XBlock):  # pylint: disable=no-init
 
         return schema_version > 1
 
-    @XBlock.supports("multi_device")  # Mark as mobile-friendly
-    def student_view(self, context):
-        """
-        Player view, displayed to the student
-        """
-
-        xmltree = etree.fromstring(self.data)
-
+    def get_context(self, xmltree):
         description = self._get_description(xmltree)
         hotspots = self._get_hotspots(xmltree)
         background = self._get_background(xmltree)
-        has_youtube = False
-        has_ooyala = False
 
         for hotspot in hotspots:
             width = 'width:{0}px'.format(hotspot.feedback.width) if hotspot.feedback.width else 'width:300px'
@@ -118,20 +109,36 @@ class ImageExplorerBlock(XBlock):  # pylint: disable=no-init
                 max_height = 'max-height:{0}px'.format(hotspot.feedback.max_height) if \
                              hotspot.feedback.max_height else 'max-height:300px'
 
-            hotspot.reveal_style = 'style="{0};{1};{2}"'.format(width, height, max_height)
-            if hotspot.feedback.youtube:
-                has_youtube = True
-
-            if hotspot.feedback.ooyala:
-                has_ooyala = True
-
         context = {
             'title': self.display_name,
             'hotspot_coordinates_centered': self.hotspot_coordinates_centered,
             'description_html': description,
             'hotspots': hotspots,
             'background': background,
+            'self': self
         }
+
+        return context
+
+    @XBlock.supports("multi_device")  # Mark as mobile-friendly
+    def student_view(self, context):
+        """
+        Player view, displayed to the student
+        """
+        xmltree = etree.fromstring(self.data)
+        context = self.get_context(xmltree)
+
+        has_youtube = False
+        has_ooyala = False
+        for hotspot in hotspots:
+            if hotspot.feedback.youtube and not has_youtube:
+                fragment.add_javascript_url('https://www.youtube.com/iframe_api')
+                has_youtube = True
+
+            if hotspot.feedback.ooyala and not has_ooyala:
+                fragment.add_javascript_url('https://player.ooyala.com/v3/635104fd644c4170ae227af2de27deab?platform=html5-priority')
+                fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/ooyala_player.js'))
+                has_ooyala = True
 
         fragment = Fragment()
         fragment.add_content(loader.render_django_template('/templates/html/image_explorer.html',
@@ -139,12 +146,6 @@ class ImageExplorerBlock(XBlock):  # pylint: disable=no-init
                                                            i18n_service=self.runtime.service(self, 'i18n')))
         fragment.add_css_url(self.runtime.local_resource_url(self, 'public/css/image_explorer.css'))
         fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/image_explorer.js'))
-        if has_youtube:
-            fragment.add_javascript_url('https://www.youtube.com/iframe_api')
-
-        if has_ooyala:
-            fragment.add_javascript_url('https://player.ooyala.com/v3/635104fd644c4170ae227af2de27deab?platform=html5-priority')
-            fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/ooyala_player.js'))
 
         fragment.initialize_js('ImageExplorerBlock')
 
@@ -219,11 +220,31 @@ class ImageExplorerBlock(XBlock):  # pylint: disable=no-init
         """
         Editing view in Studio
         """
+        xmltree = etree.fromstring(self.data)
+        context = self.get_context(xmltree)
+
         fragment = Fragment()
         fragment.add_content(loader.render_django_template('/templates/html/image_explorer_edit.html',
-                                                           context={'self': self},
+                                                           context=context,
                                                            i18n_service=self.runtime.service(self, 'i18n')))
         fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/image_explorer_edit.js'))
+
+        fragment.add_css_url(self.runtime.local_resource_url(self, 'public/css/image_explorer.css'))
+        fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/image_explorer.js'))
+
+        has_youtube = False
+        has_ooyala = False
+        for hotspot in hotspots:
+            if hotspot.feedback.youtube and not has_youtube:
+                fragment.add_javascript_url('https://www.youtube.com/iframe_api')
+                has_youtube = True
+
+            if hotspot.feedback.ooyala and not has_ooyala:
+                fragment.add_javascript_url('https://player.ooyala.com/v3/635104fd644c4170ae227af2de27deab?platform=html5-priority')
+                fragment.add_javascript_url(self.runtime.local_resource_url(self, 'public/js/ooyala_player.js'))
+                has_ooyala = True
+
+        fragment.initialize_js('ImageExplorerBlock')
 
         fragment.initialize_js('ImageExplorerEditBlock')
 
